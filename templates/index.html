@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selfie Prank</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 30px 15px;
+            background: #f5f5f5;
+        }
+
+        video {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            display: none;
+        }
+
+        button {
+            border: 0;
+            border-radius: 12px;
+            padding: 15px 25px;
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        #start {
+            background: #111;
+            color: white;
+        }
+
+        #snap {
+            display: none;
+            margin-top: 15px;
+            background: #008cff;
+            color: white;
+        }
+
+        #status {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>🤳 Selfie Prank</h2>
+
+<p>Kamera icazəsi verərək selfie çək.</p>
+
+<button id="start">Kameranı aç</button>
+
+<br><br>
+
+<video id="video" autoplay playsinline></video>
+
+<button id="snap">📸 Selfie çək</button>
+
+<p id="status"></p>
+
+<script>
+const start = document.getElementById("start");
+const snap = document.getElementById("snap");
+const video = document.getElementById("video");
+const status = document.getElementById("status");
+
+let stream;
+
+start.onclick = async () => {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "user"
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+        video.style.display = "block";
+        snap.style.display = "inline-block";
+        start.style.display = "none";
+
+        status.textContent = "Kamera açıldı. Selfie çək.";
+    } catch (error) {
+        status.textContent = "Kamera icazəsi verilmədi.";
+    }
+};
+
+snap.onclick = async () => {
+    const canvas = document.createElement("canvas");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    canvas.toBlob(async (blob) => {
+
+        const formData = new FormData();
+
+        formData.append(
+            "photo",
+            blob,
+            "selfie.jpg"
+        );
+
+        status.textContent = "Göndərilir...";
+
+        const response = await fetch("/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.ok) {
+            status.textContent = "Selfie göndərildi 😄";
+        } else {
+            status.textContent = "Göndərmək mümkün olmadı.";
+        }
+
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+
+    }, "image/jpeg", 0.9);
+};
+</script>
+
+</body>
+</html>
